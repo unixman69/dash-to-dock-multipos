@@ -442,10 +442,70 @@ export class PropertyInjectionsHandler extends BasicHandler {
     }
 }
 
+// MULTIPOS FORK: per-monitor dock positions live in the fork's own settings
+// schema as a map from monitor connector name (e.g. "DP-4") to "TOP",
+// "RIGHT", "BOTTOM" or "LEFT". Monitors without an entry follow the global
+// dock-position setting. Configured from the Position and Size prefs page.
+let _multiPosSettings;
+let _monitorPositionsCache;
+
+export function getMultiPosSettings() {
+    if (_multiPosSettings === undefined) {
+        try {
+            _multiPosSettings = Docking.DockManager.extension.getSettings(
+                'org.gnome.shell.extensions.dash-to-dock-multipos');
+        } catch (e) {
+            logError(e, 'dash-to-dock-multipos: failed to load the fork ' +
+                'settings schema, per-monitor positions are disabled. Did ' +
+                'you run glib-compile-schemas on the schemas directory?');
+            _multiPosSettings = null;
+        }
+    }
+    return _multiPosSettings;
+}
+
+// getPosition() is called on every hover, so the parsed map is cached.
+// DockManager invalidates it when the key changes and releases everything
+// on destroy so no state outlives a disable of the extension.
+export function invalidateMonitorPositionsCache() {
+    _monitorPositionsCache = undefined;
+}
+
+export function releaseMultiPosSettings() {
+    _multiPosSettings = undefined;
+    _monitorPositionsCache = undefined;
+}
+
+function getMonitorPositionOverride(monitorIndex) {
+    // -1 means "no monitor": never match it against a stale override whose
+    // connector is unplugged (get_monitor_for_connector also returns -1)
+    if (monitorIndex < 0)
+        return null;
+    const settings = getMultiPosSettings();
+    if (!settings)
+        return null;
+    if (_monitorPositionsCache === undefined) {
+        _monitorPositionsCache =
+            settings.get_value('monitor-positions').deep_unpack();
+    }
+    const monitorManager = getMonitorManager();
+    for (const [connector, side] of Object.entries(_monitorPositionsCache)) {
+        if (monitorManager.get_monitor_for_connector(connector) === monitorIndex)
+            return St.Side[side] ?? null;
+    }
+    return null;
+}
+
 /**
  * Return the actual position reverseing left and right in rtl
  */
-export function getPosition() {
+export function getPosition(monitorIndex) {
+    if (monitorIndex !== undefined && monitorIndex !== null) {
+        // Explicit per-monitor overrides are used as-is, without rtl flipping
+        const override = getMonitorPositionOverride(monitorIndex);
+        if (override !== null)
+            return override;
+    }
     const position = Docking.DockManager.settings.dockPosition;
     if (Clutter.get_default_text_direction() === Clutter.TextDirection.RTL) {
         if (position === St.Side.LEFT)

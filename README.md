@@ -1,53 +1,58 @@
-# Dash to Dock
-![screenshot](https://github.com/micheleg/dash-to-dock/raw/master/media/screenshot.jpg)
+# Dash to Dock (Multi-Position)
 
-## A dock for the GNOME Shell
-This extension enhances the dash moving it out of the overview and transforming it in a dock for an easier launching of applications and a faster switching between windows and desktops without having to leave the desktop view.
+A fork of [Dash to Dock](https://github.com/micheleg/dash-to-dock) that adds
+**per-monitor dock position**: each monitor can place its dock on a different
+edge (top, right, bottom or left), instead of every dock sharing one global
+position.
 
-[<img src="https://micheleg.github.io/dash-to-dock/media/get-it-on-ego.png" height="100">](https://extensions.gnome.org/extension/307/dash-to-dock)
+All credit for Dash to Dock itself goes to
+[Michele Gaio and contributors](https://github.com/micheleg/dash-to-dock).
+This fork is based on the upstream **v105** release and, like upstream, is
+licensed under the [GPL-2.0](COPYING).
 
-For additional installation instructions and more information visit [https://micheleg.github.io/dash-to-dock/](https://micheleg.github.io/dash-to-dock/).
+## What it adds
 
-## Installation from source
+- In **Settings → Position and size**, below *Show the dock on*, there is one
+  row per connected monitor with a dropdown:
+  **Follow global setting / Top / Right / Bottom / Left**.
+- Monitors set to *Follow global setting* behave exactly like stock Dash to
+  Dock. Choosing a side overrides the position for that monitor only, and
+  applies immediately.
+- Overrides are keyed by the monitor's connector name (e.g. `DP-4`), so they
+  survive unplugging and replugging and never leak onto other monitors.
+- Everything else — settings, themes, behavior — is unchanged from stock, and
+  the stock settings are shared: if you switch between this fork and the
+  original extension, all your preferences carry over. The per-monitor
+  overrides live in a separate, fork-only GSettings schema.
 
-The extension can be installed directly from source, either for the convenience of using git or to test the latest development version. Clone the desired branch with git
-
-### Build Dependencies
-
-To compile the stylesheet you'll need an implementation of SASS. Dash to Dock supports `dart-sass` (`sass`), `sassc`, and `ruby-sass`. Every distro should have at least one of these implementations, we recommend using `dart-sass` (`sass`) or `sassc` over `ruby-sass` as `ruby-sass` is deprecated.
-
-By default, Dash to Dock will attempt to build with `sassc`. To change this behavior set the `SASS` environment variable to either `dart` or `ruby`.
-
-```bash
-export SASS=dart
-# or...
-export SASS=ruby
-```
-
-### Building
-
-Clone the repository or download the branch from github. A simple Makefile is included.
-
-Next use `make` to install the extension into your home directory. A Shell reload is required <kbd>Alt</kbd> + <kbd>F2</kbd> <kbd>r</kbd> <kbd>Enter</kbd> under Xorg or under Wayland you may have to logout and login. The extension has to be enabled  with *gnome-extensions-app* (GNOME Extensions) or with *dconf*.
+## Installation
 
 ```bash
-git clone https://github.com/micheleg/dash-to-dock.git
-make -C dash-to-dock install
+git clone https://github.com/unixman69/dash-to-dock-multipos.git \
+    ~/.local/share/gnome-shell/extensions/dash-to-dock-multipos@unixman69
+glib-compile-schemas \
+    ~/.local/share/gnome-shell/extensions/dash-to-dock-multipos@unixman69/schemas/
 ```
 
-If `msgfmt` is not available on your system, you will see an error message like the following:
+Log out and back in (required on Wayland), then:
 
 ```bash
-make: msgfmt: No such file or directory
+gnome-extensions enable dash-to-dock-multipos@unixman69
 ```
 
-In this case install the `gettext` package from your distribution's repository.
+**Important:** this fork and the original Dash to Dock are separate
+extensions that would fight over the same dock. Enable one or the other,
+never both.
 
+## Compatibility
 
-## Bug Reporting
+GNOME Shell 45–50 (same as upstream v105). Developed and tested on
+GNOME 50.3.
 
-Bugs should be reported to the Github bug tracker [https://github.com/micheleg/dash-to-dock/issues](https://github.com/micheleg/dash-to-dock/issues).
+## Relation to upstream
 
-## License
-Dash to Dock Gnome Shell extension is distributed under the terms of the GNU General Public License,
-version 2 or later. See the COPYING file for details.
+This fork exists because upstream's `dock-position` is a single global
+setting. The change set is small and self-contained (an optional
+`monitorIndex` argument threaded through `Utils.getPosition()` plus a
+connector-keyed override map) and is offered upstream — if it lands there,
+this fork becomes obsolete, which is the best possible outcome.

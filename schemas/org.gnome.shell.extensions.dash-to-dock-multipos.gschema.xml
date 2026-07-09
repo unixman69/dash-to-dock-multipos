@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.dash-to-dock-multipos" path="/org/gnome/shell/extensions/dash-to-dock-multipos/">
+    <key name="monitor-positions" type="a{ss}">
+      <default>{}</default>
+      <summary>Per-monitor dock position overrides</summary>
+      <description>
+        Map from monitor connector name (e.g. "DP-4") to dock position
+        ("TOP", "RIGHT", "BOTTOM" or "LEFT"). Monitors without an entry
+        follow the global dock-position setting of Dash to Dock.
+      </description>
+    </key>
+  </schema>
+</schemalist>

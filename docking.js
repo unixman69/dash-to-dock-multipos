@@ -222,7 +222,7 @@ const DockedDash = GObject.registerClass({
     },
 }, class DashToDock extends St.Bin {
     _init(params) {
-        this._position = Utils.getPosition();
+        this._position = Utils.getPosition(params?.monitorIndex);
 
         // This is the centering actor
         super._init({
@@ -2050,6 +2050,21 @@ export class DockManager {
             },
         ]);
 
+        // MULTIPOS FORK: rebuild the docks when a per-monitor position
+        // override changes. The settings object is null if the fork schema
+        // failed to load, in which case overrides are disabled entirely.
+        const multiPosSettings = Utils.getMultiPosSettings();
+        if (multiPosSettings) {
+            this._signalsHandler.addWithLabel(Labels.SETTINGS, [
+                multiPosSettings,
+                'changed::monitor-positions',
+                () => {
+                    Utils.invalidateMonitorPositionsCache();
+                    this._toggle();
+                },
+            ]);
+        }
+
         this._mapExternalSetting(this._appSwitcherSettings, 'current-workspace-only',
             'isolate-workspaces', value => value || undefined);
     }
@@ -2600,6 +2615,9 @@ export class DockManager {
 
         this._desktopIconsUsableArea?.destroy();
         this._desktopIconsUsableArea = null;
+        // MULTIPOS FORK: drop the module-level settings so nothing
+        // survives a disable of the extension
+        Utils.releaseMultiPosSettings();
         this._extension = null;
         DockManager._singleton = null;
     }

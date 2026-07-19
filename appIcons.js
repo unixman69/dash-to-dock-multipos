@@ -579,11 +579,14 @@ export const DockAbstractAppIcon = GObject.registerClass({
                         let clickCount = 0;
                         // Activation is driven by St.Button's clicked signal,
                         // which is emitted on button release, so the click
-                        // count must be read from release events as well
+                        // count must be read from release events as well.
+                        // GNOME 50 removed Clutter.Event.get_click_count():
+                        // there a plain click still minimizes, only the
+                        // double-click-with-modifier detection is skipped.
                         const eventType = event?.type();
                         if (eventType === Clutter.EventType.BUTTON_PRESS ||
                             eventType === Clutter.EventType.BUTTON_RELEASE)
-                            clickCount = event.get_click_count();
+                            clickCount = event.get_click_count?.() ?? 0;
                         const allWindows = (button === 1 && !modifiers) || clickCount > 1;
                         this._minimizeWindow(allWindows);
                     } else {

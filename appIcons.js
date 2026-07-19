@@ -577,7 +577,12 @@ export const DockAbstractAppIcon = GObject.registerClass({
                         // minimize all windows on double click and always in
                         // the case of primary click without additional modifiers
                         let clickCount = 0;
-                        if (event?.type() === Clutter.EventType.BUTTON_PRESS)
+                        // Activation is driven by St.Button's clicked signal,
+                        // which is emitted on button release, so the click
+                        // count must be read from release events as well
+                        const eventType = event?.type();
+                        if (eventType === Clutter.EventType.BUTTON_PRESS ||
+                            eventType === Clutter.EventType.BUTTON_RELEASE)
                             clickCount = event.get_click_count();
                         const allWindows = (button === 1 && !modifiers) || clickCount > 1;
                         this._minimizeWindow(allWindows);
@@ -1577,9 +1582,13 @@ class DockShowAppsIconMenu extends DockAppIconMenu {
             // without presenting the existing one, so requesting it again
             // would silently do nothing: if our prefs window (whose title is
             // set to the extension name) is already open, focus it instead.
+            // Also match the wm_class of the prefs service so an unrelated
+            // window that happens to share the title (e.g. a browser tab)
+            // is never focused by mistake.
             const {extension} = Docking.DockManager;
             const prefsWindow = global.get_window_actors().map(a => a.meta_window)
-                .find(w => w.get_title() === extension.metadata.name);
+                .find(w => w.get_title() === extension.metadata.name &&
+                    w.get_wm_class()?.toLowerCase() === 'org.gnome.shell.extensions');
             if (prefsWindow)
                 Main.activateWindow(prefsWindow);
             else

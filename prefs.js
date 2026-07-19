@@ -441,8 +441,9 @@ const DockSettings = GObject.registerClass({
                 continue;
 
             const label = new Gtk.Label({
-                label: `${__('Position on ')}${monitor.displayName} - ${
-                    monitor.connector}`,
+                // Translators: %s is the monitor name, e.g. "Dell 27 - DP-1"
+                label: __('Position on %s').replace('%s',
+                    `${monitor.displayName} - ${monitor.connector}`),
                 halign: Gtk.Align.START,
                 hexpand: true,
                 xalign: 0,
@@ -464,8 +465,12 @@ const DockSettings = GObject.registerClass({
                     positions[connector] = side;
                 else
                     delete positions[connector];
+                // The guard keeps our own (synchronously emitted) changed
+                // signal from rebuilding the rows under the focused combo
+                this._savingMonitorPositions = true;
                 this._multiPosSettings.set_value('monitor-positions',
                     new GLib.Variant('a{ss}', positions));
+                this._savingMonitorPositions = false;
             });
 
             const grid = new Gtk.Grid({
@@ -500,6 +505,12 @@ const DockSettings = GObject.registerClass({
         this._monitorsConfig.connect('updated', () => {
             this._updateMonitorsSettings();
             this._updateMonitorPositionRows();
+        });
+        // Rebuild the rows when the stored overrides change behind our
+        // back (e.g. a dconf edit), but not for our own combo writes
+        this._multiPosSettings?.connect('changed::monitor-positions', () => {
+            if (!this._savingMonitorPositions)
+                this._updateMonitorPositionRows();
         });
         this._settings.connect('changed::preferred-monitor',
             () => this._updateMonitorsSettings());
